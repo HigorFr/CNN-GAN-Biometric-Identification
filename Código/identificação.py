@@ -8,13 +8,6 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import (Conv2D,MaxPooling2D,Flatten,Dense)
 from sklearn.metrics import ( precision_score, recall_score, f1_score, accuracy_score)
 
-#funções auxiliares para inicializar pesos
-def inicializar_weights_he(inp,out): #He initialization
-    return np.random.randn(out,inp) * np.sqrt(2.0 / inp)
-
-def inicializar_weights_xavier(inp,out): #Xavier/Glorot initialization
-    return np.random.randn(out,inp) * np.sqrt(2.0 / (inp + out))
-
 
 def preprocessar(nome, rotulo):
     img = tf.io.read_file(tf.strings.join([caminho_root, nome]))
@@ -64,14 +57,14 @@ ds_val  = ds_resto.take(n_val)
 ds_test = ds_resto.skip(n_val)
 
 #Aplica a função e já organiza os dataset
-ds_treino = ds_treino.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE)
+ds_treino = ds_treino.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE) #aqui é para usar a palaca dde video
 ds_val    = ds_val.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE)
 ds_test   = ds_test.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE)
 
 
 
 
-model = Sequential([
+modelo = Sequential([
     Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)),
     MaxPooling2D(2, 2),
     Conv2D(64, (3, 3), activation='relu'),
@@ -82,7 +75,7 @@ model = Sequential([
 ])
 
 
-model.compile(
+modelo.compile(
     optimizer='adam',
     loss='categorical_crossentropy',
     metrics=['accuracy']
@@ -90,27 +83,44 @@ model.compile(
 
 
 #Aplica já com validação
-history = model.fit(
+historico_val = modelo.fit(
     ds_treino,
     epochs=20,
     validation_data=ds_val
 )
 
 
+
+#ANALISE do modelo
+
 y_true = []
 y_pred = []
 
 for x, y in ds_test:
-    preds = model.predict(x)
+    preds = modelo.predict(x)
     y_true.extend(np.argmax(y.numpy(), axis=1))
     y_pred.extend(np.argmax(preds, axis=1))
 
-#cm = confusion_matrix(y_true, y_pred)
-#
-#disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-#disp.plot(cmap='Blues')
-#plt.title("Matriz de Confusão – CNN Facial")
-#plt.show()
+
+# top 20 classes mais frequentes
+classes, counts = np.unique(y_true, return_counts=True)
+top_classes = classes[np.argsort(counts)[-20:]]
+
+mask = np.isin(y_true, top_classes)
+y_true_top = np.array(y_true)[mask]
+y_pred_top = np.array(y_pred)[mask]
+
+mc = confusion_matrix(
+    y_true_top,
+    y_pred_top,
+    labels=top_classes,
+    normalize='true'
+)
+
+disp = ConfusionMatrixDisplay(mc)
+disp.plot(cmap='Blues', xticks_rotation=90)
+plt.title("Matriz de Confusão – Top 20 Identidades")
+plt.show()
 
 
 
@@ -127,8 +137,8 @@ print(f"F1-score : {f1:.4f}")
 
 
 plt.figure()
-plt.plot(history.history['loss'], label='Treino')
-plt.plot(history.history['val_loss'], label='Validação')
+plt.plot(historico_val.history['loss'], label='Treino')
+plt.plot(historico_val.history['val_loss'], label='Validação')
 plt.xlabel('Época')
 plt.ylabel('Loss (Cross-Entropy)')
 plt.title('Erro de Treino vs Validação')
@@ -150,12 +160,12 @@ with open("metricas_teste.txt", "w", encoding="utf-8") as f:
 with open("historico_treino.txt", "w", encoding="utf-8") as f:
     f.write("EPOCA\tLOSS_TREINO\tLOSS_VAL\tACUR_TREINO\tACUR_VAL\n")
 
-    for i in range(len(history.history['loss'])):
+    for i in range(len(historico_val.history['loss'])):
         f.write(
             f"{i+1}\t"
-            f"{history.history['loss'][i]:.6f}\t"
-            f"{history.history['val_loss'][i]:.6f}\t"
-            f"{history.history['accuracy'][i]:.6f}\t"
-            f"{history.history['val_accuracy'][i]:.6f}\n"
+            f"{historico_val.history['loss'][i]:.6f}\t"
+            f"{historico_val.history['val_loss'][i]:.6f}\t"
+            f"{historico_val.history['accuracy'][i]:.6f}\t"
+            f"{historico_val.history['val_accuracy'][i]:.6f}\n"
         )
 

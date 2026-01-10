@@ -1,6 +1,6 @@
 RESULTADOS NO CONJUNTO DE TESTE
 --------------------------------
-Acurácia : 0.991278
-Precisão : 0.994009
-Recall   : 0.991508
-F1-score : 0.991570
+Acurácia : 0.947667
+Precisão : 0.952375
+Recall   : 0.944007
+F1-score : 0.940148
