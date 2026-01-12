@@ -19,10 +19,7 @@ def preprocessar(nome, rotulo):
 
 usar_pouco = False #Só para mudar se eu quero testar com menos dados
 
-if usar_pouco:
-    dados = np.load("Código/20Imagens.npz", allow_pickle=True)
-else:
-    dados = np.load("Código/05Imagens.npz", allow_pickle=True)
+dados = np.load("Código/20Imagens_cgan.npz", allow_pickle=True)
 
 
 
@@ -148,7 +145,7 @@ plt.show()
 
 
 
-with open("metricas_teste.txt", "w", encoding="utf-8") as f:
+with open("metricas_teste_cgan.txt", "w", encoding="utf-8") as f:
     f.write("RESULTADOS NO CONJUNTO DE TESTE\n")
     f.write("--------------------------------\n")
     f.write(f"Acurácia : {acc:.6f}\n")
@@ -157,7 +154,7 @@ with open("metricas_teste.txt", "w", encoding="utf-8") as f:
     f.write(f"F1-score : {f1:.6f}\n")
 
 
-with open("historico_treino.txt", "w", encoding="utf-8") as f:
+with open("historico_treino_cgan.txt", "w", encoding="utf-8") as f:
     f.write("EPOCA\tLOSS_TREINO\tLOSS_VAL\tACUR_TREINO\tACUR_VAL\n")
 
     for i in range(len(historico_val.history['loss'])):
@@ -169,3 +166,6 @@ with open("historico_treino.txt", "w", encoding="utf-8") as f:
             f"{historico_val.history['val_accuracy'][i]:.6f}\n"
         )
 
+
+modelo.save("modelo_cnn_final_cgan.keras")
+print("\nModelo salvo em: modelo_cnn_final_cgan.keras")
