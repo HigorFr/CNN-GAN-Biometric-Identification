@@ -22,7 +22,6 @@ usar_pouco = False #Só para mudar se eu quero testar com menos dados
 dados = np.load("Código/20Imagens_cgan.npz", allow_pickle=True)
 
 
-
 nomes_imgs = dados["vetores"]
 rotulos = dados["rotulos"]
 num_classes = len(dados["ids_unicos"])
@@ -31,8 +30,6 @@ num_classes = len(dados["ids_unicos"])
 #configurações gerais
 timestamp = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
 random_state = 42               #seed para reproducibilidade
-
-
 caminho_root = "Código/Dataset/img_align_celeba/"
 
 
@@ -53,14 +50,13 @@ ds_resto   = dataset.skip(n_treino)
 ds_val  = ds_resto.take(n_val)
 ds_test = ds_resto.skip(n_val)
 
-#Aplica a função e já organiza os dataset
-ds_treino = ds_treino.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE) #aqui é para usar a palaca dde video
+#Aplica a função e já organiza os dataset (O map faz Endereço, Rotulo virar Imagem, Rotulo vetorizado)
+ds_treino = ds_treino.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE) #aqui é para usar a palaca dde video e a cpu ao mesmo tempo
 ds_val    = ds_val.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE)
 ds_test   = ds_test.map(preprocessar).batch(32).prefetch(tf.data.AUTOTUNE)
 
 
-
-
+#Modelo do slide
 modelo = Sequential([
     Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)),
     MaxPooling2D(2, 2),
@@ -74,7 +70,7 @@ modelo = Sequential([
 
 modelo.compile(
     optimizer='adam',
-    loss='categorical_crossentropy',
+    loss='categorical_crossentropy', #Crosso entropy, padrão
     metrics=['accuracy']
 )
 
@@ -83,23 +79,22 @@ modelo.compile(
 historico_val = modelo.fit(
     ds_treino,
     epochs=20,
-    validation_data=ds_val
+    validation_data=ds_val #<-Validação
 )
 
 
 
 #ANALISE do modelo
-
 y_true = []
 y_pred = []
 
 for x, y in ds_test:
     preds = modelo.predict(x)
-    y_true.extend(np.argmax(y.numpy(), axis=1))
-    y_pred.extend(np.argmax(preds, axis=1))
+    y_true.extend(np.argmax(y.numpy(), axis=1)) #Aqui pega o indice do vetor de rotulo verdadeiro
+    y_pred.extend(np.argmax(preds, axis=1)) #aqui o do modelo
 
 
-# top 20 classes mais frequentes
+#top 20 classes mais frequentes
 classes, counts = np.unique(y_true, return_counts=True)
 top_classes = classes[np.argsort(counts)[-20:]]
 
@@ -114,13 +109,14 @@ mc = confusion_matrix(
     normalize='true'
 )
 
+#plotar
 disp = ConfusionMatrixDisplay(mc)
 disp.plot(cmap='Blues', xticks_rotation=90)
 plt.title("Matriz de Confusão – Top 20 Identidades")
 plt.show()
 
 
-
+#calculo principais métricas para salvar
 acc  = accuracy_score(y_true, y_pred)
 prec = precision_score(y_true, y_pred, average='macro')
 rec  = recall_score(y_true, y_pred, average='macro')
@@ -133,6 +129,8 @@ print(f"Recall   : {rec:.4f}")
 print(f"F1-score : {f1:.4f}")
 
 
+
+#printar grafico de validação e treino
 plt.figure()
 plt.plot(historico_val.history['loss'], label='Treino')
 plt.plot(historico_val.history['val_loss'], label='Validação')
@@ -144,7 +142,7 @@ plt.grid(True)
 plt.show()
 
 
-
+#salva métricas
 with open("metricas_teste_cgan.txt", "w", encoding="utf-8") as f:
     f.write("RESULTADOS NO CONJUNTO DE TESTE\n")
     f.write("--------------------------------\n")
@@ -154,6 +152,7 @@ with open("metricas_teste_cgan.txt", "w", encoding="utf-8") as f:
     f.write(f"F1-score : {f1:.6f}\n")
 
 
+#salva historico do treino
 with open("historico_treino_cgan.txt", "w", encoding="utf-8") as f:
     f.write("EPOCA\tLOSS_TREINO\tLOSS_VAL\tACUR_TREINO\tACUR_VAL\n")
 

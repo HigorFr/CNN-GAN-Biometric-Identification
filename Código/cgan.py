@@ -113,15 +113,16 @@ discriminator.compile(
     metrics=["accuracy"]
 )
 
-discriminator.trainable = False
+discriminator.trainable = False #Para o modelo macro não afetar ele
 
 
 
-z = Input(shape=(latent_dim,))
-lbl = Input(shape=(1,))
-img_fake = generator([z, lbl])
-validity = discriminator([img_fake, lbl])
+z = Input(shape=(latent_dim,)) #Ruido
+lbl = Input(shape=(1,)) #Rotulo
+img_fake = generator([z, lbl]) #Geradir
+validity = discriminator([img_fake, lbl]) #Discriminador
 
+#modelo macro
 cgan = Model([z, lbl], validity)
 cgan.compile(
     loss="binary_crossentropy",
@@ -143,30 +144,31 @@ for epoch in range(epochs):
         discriminator.train_on_batch([real_imgs, labels], valid)
         discriminator.train_on_batch([fake_imgs, labels], fake)
 
-        ruido = np.random.normal(0, 1, (batch, latent_dim))
-        sampled_labels = np.random.randint(0, num_classes, batch)
+        ruido = np.random.normal(0, 1, (batch, latent_dim)) #Gera ruido
+        sampled_labels = np.random.randint(0, num_classes, batch) #PEga batch de rotulos
 
-        cgan.train_on_batch([ruido, sampled_labels], valid)
+        cgan.train_on_batch([ruido, sampled_labels], valid) #Muda só o gerador porque o peso do discrimandor está travado
 
     print(f"Epoch {epoch+1}/{epochs} finalizada")
 
 
 
 #aqui já começa a realizar a geração das imagens
-n_sinteticas = len(imgs) // 2
+n_sinteticas = len(imgs) // 2 #só pra gerar 50%
 
 ruido = np.random.normal(0, 1, (n_sinteticas, latent_dim))
 labels_sint = np.random.randint(0, num_classes, n_sinteticas)
 
 imgs_fake = generator.predict([ruido, labels_sint], verbose=0)
-imgs_fake = (imgs_fake + 1.0) / 2.0  #só normalizar
+imgs_fake = (imgs_fake + 1.0) / 2.0  #desnormalizar
 
 
 pasta_fake = caminho_imgs + "fake_cgan/"
 os.makedirs(pasta_fake, exist_ok=True)
 
+#salva
 for i, img in enumerate(imgs_fake):
-    img_uint8 = (img * 255).astype(np.uint8)
+    img_uint8 = (img * 255).astype(np.uint8) #desnormalzar dnv
     Image.fromarray(img_uint8).save(pasta_fake + f"fake_{i}.jpg")
 
 nomes_fake = np.array([f"fake_cgan/fake_{i}.jpg" for i in range(n_sinteticas)])
