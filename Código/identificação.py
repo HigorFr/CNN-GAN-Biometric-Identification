@@ -17,7 +17,6 @@ def preprocessar(nome, rotulo):
     return img, tf.one_hot(rotulo, num_classes)
 
 
-usar_pouco = False #Só para mudar se eu quero testar com menos dados
 
 dados = np.load("Código/20Imagens_cgan.npz", allow_pickle=True)
 
