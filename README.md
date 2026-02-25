@@ -17,9 +17,9 @@ The architecture combines:
 
 Training follows the adversarial optimization framework:
 
-\[
+$$
 \min_G \max_D V(D, G)
-\]
+$$
 
 where:
 
